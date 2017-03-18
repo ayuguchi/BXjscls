@@ -21,7 +21,7 @@
 %% same distribution. (The sources need not necessarily be
 %% in the same archive or directory.)
 \ProvidesFile{bxjsja-standard.def}
-  [2017/03/14 v1.5a BXJS document classes]
+  [2017/03/31 v1.6pre BXJS document classes]
 %% このファイルは日本語文字を含みます
 \input{bxjsja-minimal.def}
 \bxjs@simplejasetupfalse
@@ -375,7 +375,15 @@
     \PassOptionsToPackage{unicode}{hyperref}
   \fi
 \fi
-\let\jsInhibitGlueAtParTop\@empty
+\AtEndOfPackage{%
+\def\@gnewline #1{%
+  \ifvmode \@nolnerr
+  \else
+    \unskip \reserved@e {\reserved@f#1}\nobreak \hfil \break \null
+    \nobreak \hskip-1sp\hskip1sp\relax
+    \ignorespaces
+  \fi}
+}
 \newskip\jsKanjiSkip
 \newskip\jsXKanjiSkip
 \ifx\CJKecglue\@undefined
@@ -446,11 +454,21 @@
 \ltjsetparameter{jaxspmode={`〒,2}}
 \ltjsetparameter{alxspmode={`+,3}}
 \ltjsetparameter{alxspmode={`\%,3}}
-\protected\def\@inhibitglue{%
+\protected\def\jsInhibitGlueAtParTop{%
   \directlua{%
     luatexja.jfmglue.create_beginpar_node()}}
-\let\bxjs@ltj@inhibitglue\@inhibitglue
-\let\@@inhibitglue\@undefined
+\begingroup
+  \let\%\@percentchar \def\@#1{[[\detokenize{#1}]]}
+  \directlua{
+    local function patchcmd(cs, code, from, to)
+      tex.sprint(code:gsub(from:gsub("\%W", "\%\%\%0"), "\%0"..to)
+        :gsub("macro:", \@\gdef..cs, 1):gsub("->", "{", 1).."}")
+    end
+    patchcmd(\@\@xsect, [[\meaning\@xsect]],
+      \@{\hskip-\@tempskipa}, \@\jsInhibitGlueAtParTop)
+    patchcmd(\@\@item, [[\meaning\@item]],
+      \@{\everypar{}}, \@\jsInhibitGlueAtParTop)}
+\endgroup
 \ifbxjs@hyperref@enc
   \bxjs@fix@hyperref@unicode{true}
 \fi

@@ -22,7 +22,7 @@
 %% in the same archive or directory.)
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesClass{bxjsarticle}
-  [2017/03/14 v1.5a BXJS document classes]
+  [2017/03/31 v1.6pre BXJS document classes]
 %% このファイルは日本語文字を含みます.
 \RequirePackage{calc}
 \RequirePackage{keyval}
@@ -1307,11 +1307,10 @@
         \unskip
         \@tempskipa #1\relax
         \hskip -\@tempskipa
-        \bxjs@ltj@inhibitglue
       \else
         \clubpenalty \@clubpenalty
-        \everypar{\everyparhook}%
-      \fi\everyparhook}%
+        \everypar{}%
+      \fi}%
   \else
     \par \nobreak
     \vskip \@tempskipa
@@ -1336,7 +1335,6 @@
     \endgroup
   \fi
   \@xsect{#3}}
-\let\bxjs@ltj@inhibitglue\@empty
 \newcommand*\chaptermark[1]{}
 \setcounter{secnumdepth}{3}
 \newcounter{part}
@@ -1924,8 +1922,21 @@
   \noindent
   \llap{\@makefnmark\hskip0.3\jsZw}#1}
 \let\jsInhibitGlueAtParTop\@empty
-\def\everyparhook{\jsInhibitGlueAtParTop}
-\AtBeginDocument{\everypar{\everyparhook}}
+\let\bxjs@everypar\everypar
+\newtoks\everypar
+\everypar\bxjs@everypar
+\let\everyparhook\@empty
+\bxjs@everypar{\the\expandafter\everypar\everyparhook}%
+\g@addto@macro\everyparhook{\jsInhibitGlueAtParTop}
+\def\bxjs@check@everyparhook{%
+  \ifx\jsInhibitGlueAtParTop\@empty
+    \def\bxjs@tmpa{\jsInhibitGlueAtParTop}%
+    \ifx\everyparhook\bxjs@tmpa
+      \let\everyparhook\@empty
+    \fi
+  \fi}
+\AtBeginDocument{\bxjs@check@everyparhook}
+\ifx j\jsEngine
 \def\@inhibitglue{%
   \futurelet\@let@token\@@inhibitglue}
 \begingroup
@@ -1953,88 +1964,8 @@
       \inhibitglue
     \fi
   \fi}
-\def\@doendpe{%
-  \@endpetrue
-  \def\par{%
-    \@restorepar\clubpenalty\@clubpenalty\everypar{\everyparhook}\par\@endpefalse}%
-  \everypar{{\setbox\z@\lastbox}\everypar{\everyparhook}\@endpefalse\everyparhook}}
-\def\@item[#1]{%
-  \if@noparitem
-    \@donoparitem
-  \else
-    \if@inlabel
-      \indent \par
-    \fi
-    \ifhmode
-      \unskip\unskip \par
-    \fi
-    \if@newlist
-      \if@nobreak
-        \@nbitem
-      \else
-        \addpenalty\@beginparpenalty
-        \addvspace\@topsep
-        \addvspace{-\parskip}%
-      \fi
-    \else
-      \addpenalty\@itempenalty
-      \addvspace\itemsep
-    \fi
-    \global\@inlabeltrue
-  \fi
-  \everypar{%
-    \@minipagefalse
-    \global\@newlistfalse
-    \if@inlabel
-      \global\@inlabelfalse
-      {\setbox\z@\lastbox
-       \ifvoid\z@
-         \kern-\itemindent
-       \fi}%
-      \box\@labels
-      \penalty\z@
-    \fi
-    \if@nobreak
-      \@nobreakfalse
-      \clubpenalty \@M
-    \else
-      \clubpenalty \@clubpenalty
-      \everypar{\everyparhook}%
-    \fi
-    \bxjs@ltj@inhibitglue
-    \everyparhook}%
-  \if@noitemarg
-    \@noitemargfalse
-    \if@nmbrlist
-      \refstepcounter\@listctr
-    \fi
-  \fi
-  \sbox\@tempboxa{\makelabel{#1}}%
-  \global\setbox\@labels\hbox{%
-    \unhbox\@labels
-    \hskip \itemindent
-    \hskip -\labelwidth
-    \hskip -\labelsep
-    \ifdim \wd\@tempboxa >\labelwidth
-      \box\@tempboxa
-    \else
-      \hbox to\labelwidth {\unhbox\@tempboxa}%
-    \fi
-    \hskip \labelsep}%
-  \ignorespaces}
-\def\@afterheading{%
-  \@nobreaktrue
-  \everypar{%
-    \if@nobreak
-      \@nobreakfalse
-      \clubpenalty \@M
-      \if@afterindent \else
-        {\setbox\z@\lastbox}%
-      \fi
-    \else
-      \clubpenalty \@clubpenalty
-      \everypar{\everyparhook}%
-    \fi\everyparhook}}
+\fi
+\AtEndOfPackage{%
 \def\@gnewline #1{%
   \ifvmode
     \@nolnerr
@@ -2042,6 +1973,7 @@
     \unskip \reserved@e {\reserved@f#1}\nobreak \hfil \break \null
     \jsInhibitGlue \ignorespaces
   \fi}
+}
 \if@jslogo
   \IfFileExists{jslogo.sty}{%
     \RequirePackage{jslogo}%
